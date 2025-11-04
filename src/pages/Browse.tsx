@@ -5,20 +5,77 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Info, MapPin, DollarSign } from "lucide-react";
-import { mockReservations, type Reservation } from "@/data/mockReservations";
+import { IApiResponse, mockReservations, type Reservation } from "@/data/mockReservations";
+import { useEffect, useState } from "react";
+import { getAllServices } from "@/api/servicesApi";
+import { Skeleton } from "@/components/ui/skeleton";
+
+
+
+// Generic API response
+
 
 const Services = () => {
   const navigate = useNavigate();
+  const [services, setServices] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+   useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response: IApiResponse<Reservation[]> = await getAllServices();
+        if (response?.success) {
+          setServices(response?.data ?? []);
+          
+        } else {
+          setError(response?.message || 'Failed to load services');
+        }
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+         setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
 
   const handleViewDetails = (reservation: Reservation) => {
-    navigate(`/service/${reservation.id}`, { state: { reservation } });
+    navigate(`/service/${reservation._id}`,);
   };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-12">
+      <div>
+        {
+          loading ? (
+            <div className="container mx-auto px-4 py-12">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden border-2 bg-white">
+                  <Skeleton className="h-48 w-full" />
+                  <CardHeader>
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-1/3" />
+                  </CardContent>
+                  <CardFooter>
+                    <Skeleton className="h-10 w-full" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+            ) : 
+            (
+               <div className="container mx-auto px-4 py-12">
         <div className="mb-10 text-center">
           <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-primary via-blue-600 to-accent bg-clip-text text-transparent">
             Our Services
@@ -29,8 +86,8 @@ const Services = () => {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockReservations.map((reservation) => (
-            <Card key={reservation.id} className="group hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 hover:border-primary/50 bg-white">
+          {services.map((reservation) => (
+            <Card key={reservation._id} className="group hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 hover:border-primary/50 bg-white">
               <div className="relative h-48 overflow-hidden">
                 <img 
                   src={reservation.image} 
@@ -75,6 +132,10 @@ const Services = () => {
           ))}
         </div>
       </div>
+            )
+        }
+      </div>
+     
 
       <Footer />
     </div>

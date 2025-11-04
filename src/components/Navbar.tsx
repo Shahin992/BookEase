@@ -1,20 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, LogIn, Menu, X, User } from "lucide-react";
+import { Calendar, LogIn, Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/Context/AuthContext";
 
 const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isLoggedIn = false; // TODO: Replace with actual auth state
+  const { user, logout, isAuthenticated } = useAuth();
+
 
   const guestLinks = [
     { to: "/", label: "Home" },
     { to: "/services", label: "Services" },
     { to: "/about", label: "About" },
     { to: "/contact", label: "Contact" },
-    { to: "/my-bookings", label: "My Bookings" },
   ];
 
   const userLinks = [
@@ -25,7 +26,7 @@ const Navbar = () => {
     { to: "/contact", label: "Contact" },
   ];
 
-  const navLinks = isLoggedIn ? userLinks : guestLinks;
+  const navLinks = isAuthenticated ? userLinks : guestLinks;
 
   return (
     <nav className="border-b bg-white shadow-sm sticky top-0 z-50">
@@ -63,7 +64,7 @@ const Navbar = () => {
 
           {/* Auth Buttons - Desktop */}
           <div className="hidden lg:flex items-center gap-3">
-            {!isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 {/* User Info Display - Shows when logged in */}
                 <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
@@ -74,22 +75,25 @@ const Navbar = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground">John Doe</span>
-                    <span className="text-xs text-muted-foreground">john@example.com</span>
+                    <span className="text-sm font-semibold text-foreground">{user.fullName || ""}</span>
+                    <span className="text-xs text-muted-foreground">{user.email || ''}</span>
                   </div>
                 </div>
                 
-                <Link to="/signin">
+          
+                  <Button onClick={logout} size="lg" className="h-14 bg-primary hover:bg-primary/90">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Log Out
+                  </Button>
+                
+              </>
+            ) : (
+              <Link to="/signin">
                   <Button size="sm" className="bg-primary hover:bg-primary/90">
-                    <LogIn className="h-4 w-4 mr-2" />
+                    <LogIn className="h-8 w-8 mr-2" />
                     Sign In
                   </Button>
                 </Link>
-              </>
-            ) : (
-              <Button variant="outline" size="sm" onClick={() => {/* TODO: Add logout */}}>
-                Logout
-              </Button>
             )}
           </div>
 
@@ -127,7 +131,7 @@ const Navbar = () => {
                 );
               })}
               <div className="border-t pt-3 mt-2 flex flex-col gap-2">
-                {!isLoggedIn ? (
+                {!isAuthenticated ? (
                   <Link to="/signin" onClick={() => setIsMenuOpen(false)}>
                     <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
                       <LogIn className="h-4 w-4 mr-2" />
@@ -135,7 +139,7 @@ const Navbar = () => {
                     </Button>
                   </Link>
                 ) : (
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => {/* TODO: Add logout */}}>
+                  <Button variant="outline" size="sm" className="w-full" onClick={logout}>
                     Logout
                   </Button>
                 )}

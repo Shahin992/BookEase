@@ -3,11 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Hotel, Car, Building2, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-import { mockReservations, type Reservation } from "@/data/mockReservations";
+import { Reservation } from "@/data/mockReservations";
 
-const featuredServices: Reservation[] = mockReservations.slice(0, 3);
 
-const FeaturedServices = () => {
+
+interface FeaturedServicesProps {
+  services: Reservation[]; 
+}
+
+const FeaturedServices: React.FC<FeaturedServicesProps> = ({ services }) => {
+  
+
+
   const getServiceIcon = (type: string) => {
     switch (type) {
       case "Resort":
@@ -32,11 +39,11 @@ const FeaturedServices = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {featuredServices.map((service) => {
+          {services?.slice(0, 3).map((service) => {
             return (
               <Link
-                key={service.id}
-                to={`/service/${service.id}`}
+                key={service._id}
+                to={`/service/${service._id}`}
                 state={{ reservation: service }}
               >
                 <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 hover-scale group">

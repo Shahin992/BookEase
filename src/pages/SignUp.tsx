@@ -3,9 +3,77 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { apiRequest } from "@/api/apiClient";
+import { useState } from "react";
+import { signupSchema } from "@/Utils/userValidation";
+import { createUser } from "@/api/authApi";
+
+interface FormErrors {
+  fullName?: string;
+  email?: string;
+  password?: string;
+  general?: string;
+}
 
 const SignUp = () => {
+
+  const [form, setForm] = useState({ fullName: "", email: "", password: "" });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { id, value } = e.target;
+
+  // Clear error for this field if it exists
+  if (errors[id as keyof typeof errors]) {
+    setErrors(prev => ({
+      ...prev,
+      [id]: '', // clear only this field's error
+    }));
+  }
+
+  // Update form state
+  setForm(prev => ({
+    ...prev,
+    [id]: value,
+  }));
+};
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    // Validate form
+    console.log("form===>",form)
+    const validation = signupSchema.safeParse(form);
+    if (!validation.success) {
+      const fieldErrors: FormErrors = {};
+      validation.error.errors.forEach(err => {
+        const field = err.path[0] as keyof FormErrors;
+        fieldErrors[field] = err.message;
+      });
+      console.log('error===>', fieldErrors)
+      setErrors(fieldErrors);
+      return;
+    }
+
+    // Call API
+    setLoading(true);
+    try {
+      const response = await createUser(form);
+      console.log("Signup success:", response);
+      navigate('/signin');
+      setForm({ fullName: "", email: "", password: "" });
+    } catch (error: any) {
+      console.error(error);
+      setErrors({ general: error.response?.data?.message || "Failed to create user" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
       <Navbar />
@@ -23,12 +91,14 @@ const SignUp = () => {
             </CardHeader>
             <CardContent className="space-y-4 pb-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-foreground/90">Full Name</Label>
+                <Label htmlFor="fullName" className="text-foreground/90">Full Name</Label>
                 <Input 
-                  id="name" 
+                  id="fullName" 
                   placeholder="Enter your name"
                   className="focus-visible:border-accent"
+                  onChange={handleChange}
                 />
+                 {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground/90">Email</Label>
@@ -37,7 +107,9 @@ const SignUp = () => {
                   type="email" 
                   placeholder="Enter your email"
                   className="focus-visible:border-accent"
+                  onChange={handleChange}
                 />
+                {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground/90">Password</Label>
@@ -46,10 +118,15 @@ const SignUp = () => {
                   type="password" 
                   placeholder="Create a password"
                   className="focus-visible:border-accent"
+                  onChange={handleChange}
                 />
+                {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+
+                {errors.general && <p className="text-red-500 text-sm">{errors.general}</p>}
+
               </div>
-              <Button className="w-full mt-6" size="lg" style={{ background: 'var(--gradient-accent)' }}>
-                Sign Up
+              <Button  onClick={handleSubmit} className="w-full mt-6" size="lg" style={{ background: 'var(--gradient-accent)' }}>
+                {loading ? "Signing up..." : "Sign Up"}
               </Button>
               <div className="text-center text-sm text-muted-foreground pt-2">
                 Already have an account?{" "}

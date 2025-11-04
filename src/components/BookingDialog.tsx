@@ -22,24 +22,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { CreateBookingRequest, Reservation } from "@/data/mockReservations";
+import { createBooking } from "@/api/bookingApi";
+import { useAuth } from "@/Context/AuthContext";
 
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reservation: {
-    id: number;
-    title: string;
-    type: string;
-    location: string;
-    price: number;
-  };
+  reservation: Reservation;
 }
 
 const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) => {
+  const { user,  } = useAuth();
   const [step, setStep] = useState(1);
   const [checkIn, setCheckIn] = useState<Date>();
   const [checkOut, setCheckOut] = useState<Date>();
-  const [guests, setGuests] = useState(1);
+  const [guests, setGuests] = useState<number>(1);
   const [preferences, setPreferences] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
@@ -131,6 +129,33 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
     setCvv("");
   };
 
+  const handleBooking = async () => {
+  if (!checkIn || !checkOut) return;
+
+  try {
+    const payload: CreateBookingRequest = {
+      serviceId: reservation?._id.toString(),
+      checkInDate: checkIn.toISOString(),
+      checkOutDate: checkOut.toISOString(),
+      totalGuests: guests,
+      _id: user._id
+    };
+
+    const response = await createBooking(payload);
+
+    if (response.success) {
+      console.log('res===>',response.data)
+      toast.success("Booking confirmed!");
+      setShowSuccessAlert(true);
+    } else {
+      toast.error(response.message || "Booking failed");
+    }
+  } catch (error: any) {
+    const msg = error.response?.data?.message || error.message || "Something went wrong";
+    toast.error(msg);
+  }
+};
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -216,12 +241,12 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
                   type="number"
                   min={1}
                   value={guests}
-                  onChange={(e) => setGuests(parseInt(e.target.value) || 1)}
+                  onChange={(e) => setGuests(parseInt(e.target.value))}
                 />
               </div>
 
               {/* Preferences */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="preferences">Special Preferences (Optional)</Label>
                 <Textarea
                   id="preferences"
@@ -230,7 +255,7 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
                   onChange={(e) => setPreferences(e.target.value)}
                   rows={4}
                 />
-              </div>
+              </div> */}
 
               <Separator />
 
@@ -260,7 +285,7 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
               <Button 
                 className="w-full" 
                 size="lg"
-                onClick={() => setStep(2)}
+                onClick={handleBooking}
                 disabled={!checkIn || !checkOut}
               >
                 Continue to Payment

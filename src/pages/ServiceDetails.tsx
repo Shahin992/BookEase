@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import type { Reservation } from "@/data/mockReservations";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -6,18 +6,42 @@ import BookingDialog from "@/components/BookingDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, DollarSign, ArrowLeft, Calendar, Users, Wifi, Star } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getServiceById } from "@/api/servicesApi";
+import { array } from "zod";
+import ServiceDetailsSkeleton from "@/components/ServiceDetailsSkeleton";
 
 const ServiceDetails = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const reservation = location.state?.reservation;
+  const { id } = useParams<{ id: string }>();
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!reservation) {
-    navigate('/browse');
-    return null;
-  }
+  useEffect(() => {
+    const fetchReservation = async () => {
+      if (!id) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await getServiceById(id);
+        if (response.success) {
+          setReservation(response.data);
+        } else {
+          setError(response.message || "Failed to fetch reservation.");
+        }
+      } catch (err: any) {
+        setError(err.message || "Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReservation();
+  }, []);
 
   const getServiceDescription = (type: string) => {
     switch (type) {
@@ -48,7 +72,9 @@ const ServiceDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
+    { loading ? (<ServiceDetailsSkeleton/>) :
+     !loading &&  reservation ? ( 
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -59,6 +85,7 @@ const ServiceDetails = () => {
           Back to Services
         </Button>
 
+      
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Image Section */}
           <div className="space-y-4">
@@ -150,8 +177,9 @@ const ServiceDetails = () => {
           </div>
         </div>
       </div>
+    ) : <div>no data found</div>}
 
-      {reservation && (
+      {bookingDialogOpen && (
         <BookingDialog
           open={bookingDialogOpen}
           onOpenChange={setBookingDialogOpen}

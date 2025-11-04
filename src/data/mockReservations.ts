@@ -1,5 +1,5 @@
 export interface Reservation {
-  id: number;
+  _id: number;
   title: string;
   type: string;
   location: string;
@@ -7,6 +7,48 @@ export interface Reservation {
   image: string;
   available: boolean;
   badge?: string;
+}
+
+export interface IApiResponse<T> {
+  success: boolean;
+  statusCode?: number;
+  message?: string;
+  data: T;
+}
+
+export interface CreateBookingRequest {
+  serviceId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalGuests: number;
+  _id: string
+}
+
+export interface IBooking {
+  _id: string;
+  service: string; 
+  user: string; 
+  bookingDate: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalDays: number;
+  totalGuests: number;
+  totalPrice: number;
+  paymentStatus: "Pending" | "Paid" | "Cancelled";
+  bookingStatus: "Upcoming" | "Completed" | "Cancelled";
+}
+
+export interface ISignInResponse {
+  success: boolean;
+  statusCode?: number;
+  message?: string;
+  data: {
+    _id: string;
+    fullName: string;
+    email: string;
+    userId: number;
+    token: string;
+  };
 }
 
 export const mockReservations: Reservation[] = [
