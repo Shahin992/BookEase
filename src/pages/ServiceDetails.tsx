@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { getServiceById } from "@/api/servicesApi";
 import { array } from "zod";
 import ServiceDetailsSkeleton from "@/components/ServiceDetailsSkeleton";
+import { useAuth } from "@/Context/AuthContext";
 
 const ServiceDetails = () => {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ const ServiceDetails = () => {
 const [reservation, setReservation] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user,  isAuthenticated } = useAuth();
+
 
   useEffect(() => {
     const fetchReservation = async () => {
@@ -168,7 +171,12 @@ const [reservation, setReservation] = useState<Reservation | null>(null);
 
               <Button
                 className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg text-lg py-6"
-                onClick={() => setBookingDialogOpen(true)}
+                onClick={() => {
+                  if (!isAuthenticated){
+                    navigate('/signin')
+                  }
+                  setBookingDialogOpen(true)}
+                }
                 disabled={!reservation.available}
               >
                 {reservation.available ? "Book Now" : "Currently Unavailable"}
