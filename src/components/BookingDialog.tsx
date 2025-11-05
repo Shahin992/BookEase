@@ -23,8 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { CreateBookingRequest, Reservation } from "@/data/mockReservations";
-import { createBooking } from "@/api/bookingApi";
+import { checkBookingConflictApi, createBooking } from "@/api/bookingApi";
 import { useAuth } from "@/Context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface BookingDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
   const [cvv, setCvv] = useState("");
   const [cardError, setCardError] = useState("");
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const navigate = useNavigate();
 
   // Stripe test card numbers
   const validTestCards = [
@@ -111,12 +113,13 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
     return days * reservation.price;
   };
 
-  const handlePayment = () => {
-    setShowSuccessAlert(true);
+  const handlePayment = async() => {
+    await handleBooking();
   };
 
   const handleSuccessConfirm = () => {
     onOpenChange(false);
+    navigate('/my-bookings')
     // Reset form
     setStep(1);
     setCheckIn(undefined);
@@ -144,7 +147,6 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
     const response = await createBooking(payload);
 
     if (response.success) {
-      console.log('res===>',response.data)
       toast.success("Booking confirmed!");
       setShowSuccessAlert(true);
     } else {
@@ -155,6 +157,31 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
     toast.error(msg);
   }
 };
+
+const checkAvailability = async () => {
+  if (!checkIn || !checkOut) return;
+
+  try {
+    const response = await checkBookingConflictApi({
+      serviceId: reservation?._id.toString(),
+      checkInDate: checkIn.toISOString(),
+      checkOutDate: checkOut.toISOString(),
+    });
+
+    if (response.success) {
+      // toast.success("Service is available for the selected dates!");
+      setStep(2);
+    } else {
+      toast.error(response.message || "This Service is Booked On this date.");
+      return;
+    }
+  } catch (error: any) {
+    const msg = error.response?.data?.message || error.message || "Something went wrong";
+    toast.error(msg);
+    return false;
+  }
+};
+
 
   return (
     <>
@@ -285,7 +312,7 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
               <Button 
                 className="w-full" 
                 size="lg"
-                onClick={handleBooking}
+                onClick={checkAvailability}
                 disabled={!checkIn || !checkOut}
               >
                 Continue to Payment
@@ -349,15 +376,15 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
                   <Label htmlFor="cardName" className="text-sm font-semibold">Cardholder Name</Label>
                   <Input
                     id="cardName"
-                    placeholder="Test User (Stripe Test)"
+                    placeholder="User (Stripe Test)"
                     value={cardName}
                     onChange={(e) => setCardName(e.target.value)}
                     className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
                   />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  {/* <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <span className="inline-block w-1 h-1 rounded-full bg-primary" />
                     Use any test name for Stripe test mode
-                  </p>
+                  </p> */}
                 </div>
 
                 <div className="space-y-2">

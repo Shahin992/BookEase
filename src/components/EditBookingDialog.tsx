@@ -6,6 +6,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { updateBookingDates } from "@/api/bookingApi";
+import { toast } from "sonner";
 
 interface EditBookingDialogProps {
   open: boolean;
@@ -24,15 +26,44 @@ export const EditBookingDialog = ({
   serviceName,
   currentCheckIn,
   currentCheckOut,
-  onSave,
+   onSave,
 }: EditBookingDialogProps) => {
   const [checkIn, setCheckIn] = useState<Date>(new Date(currentCheckIn));
   const [checkOut, setCheckOut] = useState<Date>(new Date(currentCheckOut));
+  const [editing, setEditing] = useState(false);
 
-  const handleSave = () => {
-    onSave(bookingId, checkIn, checkOut);
-    onOpenChange(false);
-  };
+
+  const handleSaveEdit = async (
+  bookingId: string,
+  checkIn: Date,
+  checkOut: Date
+) => {
+  setEditing(true);
+  try {
+    // 🔹 1. Call backend API (which already validates conflicts)
+    const response = await updateBookingDates({
+      bookingId,
+      checkInDate: checkIn.toISOString(),
+      checkOutDate: checkOut.toISOString(),
+    });
+
+    // 🔹 2. Handle response
+    if (response.success) {
+      onSave(bookingId, checkIn, checkOut);
+
+      toast.success("Booking updated successfully!");
+      onOpenChange(false);
+    } else {
+      toast.error(response.message || "Failed to update booking");
+    }
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message || error.message || "Something went wrong";
+    toast.error(msg);
+  } finally {
+    setEditing(false);
+  }
+};
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -109,8 +140,8 @@ export const EditBookingDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save Changes
+          <Button disabled={editing} onClick={()=>handleSaveEdit(bookingId, checkIn, checkOut)}>
+            {editing ? "Savaing..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

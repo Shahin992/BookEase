@@ -11,7 +11,7 @@ const apiClient = axios.create({
 });
 
 export const apiRequest = async <T>(
-  method: 'get' | 'post' | 'put' | 'delete',
+  method: 'get' | 'post' | 'put' | 'delete' | 'patch',
   url: string,
   data?: any,
   config?: AxiosRequestConfig

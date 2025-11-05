@@ -9,5 +9,9 @@ export const SERVICES_ENDPOINTS = {
 };
 
 export const BOOKING_ENDPOINTS = {
-  createBooking: '/api/bookings'
+  createBooking: '/api/bookings',
+  getUserBookings: '/api/bookings/my-bookings',
+  checkAvailability: '/api/bookings/service-availability',
+  updateBookingDates: "/api/bookings/update-dates",
+  cancelBooking: '/api/bookings/cancel-booking'
 }

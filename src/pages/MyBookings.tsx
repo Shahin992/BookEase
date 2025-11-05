@@ -1,131 +1,104 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EditBookingDialog } from "@/components/EditBookingDialog";
-import { Search, X, Hotel, Car, Building2, Calendar, MapPin, DollarSign, AlertTriangle } from "lucide-react";
+import {
+  Search,
+  X,
+  Hotel,
+  Car,
+  Building2,
+  Calendar,
+  MapPin,
+  DollarSign,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
+import { cancelBooking, getUserBookings, updateBookingDates } from "@/api/bookingApi";
+import { IBooking } from "@/data/mockReservations";
+import { useAuth } from "@/Context/AuthContext";
+import MyBookingsSkeleton from "@/components/MyBookingsSkeleton";
 
-interface Booking {
-  id: string;
-  serviceType: "Resort" | "Vehicle" | "Conference Hall";
-  serviceName: string;
-  image: string;
+export interface Booking {
+  _id: string;
+  bookingId: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  service: {
+    _id: string;
+    title: string;
+    price: number;
+    image: string;
+    type: string;
+    location: string;
+  };
   bookingDate: string;
-  checkIn: string;
-  checkOut: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalDays: number;
   totalPrice: number;
-  paymentStatus: "Paid" | "Pending";
-  bookingStatus: "Confirmed" | "Cancelled" | "Completed" | "Upcoming";
+  bookingStatus: "Upcoming" | "Completed" | "Cancelled";
+  paymentStatus: "Pending" | "Paid" | "Cancelled";
 }
-
-const mockBookings: Booking[] = [
-  // Can edit/cancel - check-in is 10 days away
-  {
-    id: "BK-2024-001",
-    serviceType: "Resort",
-    serviceName: "Luxury Beach Resort",
-    image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d",
-    bookingDate: "2025-10-25",
-    checkIn: "2025-11-12",
-    checkOut: "2025-11-15",
-    totalPrice: 1250,
-    paymentStatus: "Paid",
-    bookingStatus: "Upcoming",
-  },
-  // Can edit/cancel - check-in is 5 days away
-  {
-    id: "BK-2024-002",
-    serviceType: "Vehicle",
-    serviceName: "Toyota Camry 2023",
-    image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2",
-    bookingDate: "2025-10-28",
-    checkIn: "2025-11-07",
-    checkOut: "2025-11-10",
-    totalPrice: 350,
-    paymentStatus: "Paid",
-    bookingStatus: "Confirmed",
-  },
-  // Cannot edit/cancel - check-in is today
-  {
-    id: "BK-2024-003",
-    serviceType: "Conference Hall",
-    serviceName: "Grand Conference Center",
-    image: "https://images.unsplash.com/photo-1505236858219-8359eb29e329",
-    bookingDate: "2025-10-20",
-    checkIn: "2025-11-02",
-    checkOut: "2025-11-02",
-    totalPrice: 800,
-    paymentStatus: "Paid",
-    bookingStatus: "Confirmed",
-  },
-  // Cannot edit/cancel - check-in is tomorrow (within 1 day)
-  {
-    id: "BK-2024-004",
-    serviceType: "Resort",
-    serviceName: "Mountain View Lodge",
-    image: "https://images.unsplash.com/photo-1566073771259-6a8506099945",
-    bookingDate: "2025-10-15",
-    checkIn: "2025-11-03",
-    checkOut: "2025-11-05",
-    totalPrice: 950,
-    paymentStatus: "Pending",
-    bookingStatus: "Upcoming",
-  },
-  // Already completed - past booking
-  {
-    id: "BK-2024-005",
-    serviceType: "Vehicle",
-    serviceName: "Mercedes S-Class",
-    image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2",
-    bookingDate: "2025-09-20",
-    checkIn: "2025-10-01",
-    checkOut: "2025-10-05",
-    totalPrice: 650,
-    paymentStatus: "Paid",
-    bookingStatus: "Completed",
-  },
-  // Already cancelled
-  {
-    id: "BK-2024-006",
-    serviceType: "Conference Hall",
-    serviceName: "City Convention Hall",
-    image: "https://images.unsplash.com/photo-1505236858219-8359eb29e329",
-    bookingDate: "2025-09-10",
-    checkIn: "2025-10-15",
-    checkOut: "2025-10-15",
-    totalPrice: 500,
-    paymentStatus: "Paid",
-    bookingStatus: "Cancelled",
-  },
-  // Can edit/cancel - check-in is 20 days away
-  {
-    id: "BK-2024-007",
-    serviceType: "Resort",
-    serviceName: "Seaside Paradise Resort",
-    image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d",
-    bookingDate: "2025-10-28",
-    checkIn: "2025-11-22",
-    checkOut: "2025-11-27",
-    totalPrice: 1500,
-    paymentStatus: "Pending",
-    bookingStatus: "Upcoming",
-  },
-];
 
 const MyBookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  const [bookings, setBookings] = useState<IBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+   
+
+  fetchBookings();
+  }, []);
+
+   const fetchBookings = async () => {
+      try {
+        const userId = user._id;
+        const response = await getUserBookings({userId});
+        if (response.success) {
+          setBookings(response.data);
+        } else {
+          toast.error(response.message || "Failed to fetch bookings");
+        }
+      } catch (error: any) {
+        console.error("Error fetching bookings:", error);
+        toast.error(error.response?.data?.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const getServiceIcon = (type: string) => {
     switch (type) {
@@ -158,35 +131,43 @@ const MyBookings = () => {
     return status === "Paid" ? "default" : "outline";
   };
 
-  const handleCancel = (bookingId: string) => {
-    setBookings(
-      bookings.map((booking) =>
-        booking.id === bookingId ? { ...booking, bookingStatus: "Cancelled" as const } : booking
-      )
-    );
-    toast.success("Booking cancelled successfully");
-    setCancelDialogOpen(false);
-    setSelectedBooking(null);
-  };
+  const handleCancel = async (bookingId: string) => {
+  try {
+    const response = await cancelBooking({ bookingId });
+
+    if (response.success) {
+      // Update the bookings state
+      setBookings(
+        bookings.map((booking) =>
+          booking._id === bookingId
+            ? { ...booking, bookingStatus: "Cancelled" }
+            : booking
+        )
+      );
+
+      toast.success("Booking cancelled successfully");
+
+      // Close the dialog and reset selected booking
+      setCancelDialogOpen(false);
+      setSelectedBooking(null);
+    } else {
+      toast.error(response.message || "Failed to cancel booking");
+    }
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message || error.message || "Something went wrong";
+    toast.error(msg);
+  }
+};
+
 
   const handleEdit = (booking: Booking) => {
     setSelectedBooking(booking);
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = (bookingId: string, checkIn: Date, checkOut: Date) => {
-    setBookings(
-      bookings.map((booking) =>
-        booking.id === bookingId
-          ? {
-              ...booking,
-              checkIn: checkIn.toISOString().split('T')[0],
-              checkOut: checkOut.toISOString().split('T')[0],
-            }
-          : booking
-      )
-    );
-    toast.success("Booking updated successfully");
+  const handleSaveEdit = async () => {
+    await fetchBookings();
   };
 
   const openCancelDialog = (booking: Booking) => {
@@ -199,18 +180,24 @@ const MyBookings = () => {
     const today = new Date();
     const oneDayBeforeCheckIn = new Date(checkIn);
     oneDayBeforeCheckIn.setDate(checkIn.getDate() - 1);
-    
     return today <= oneDayBeforeCheckIn;
   };
 
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch =
-      booking.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "all" || booking.bookingStatus.toLowerCase() === filterStatus;
-    const matchesType = filterType === "all" || booking.serviceType.toLowerCase() === filterType;
+      booking.service.title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      booking.bookingId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      booking.bookingStatus.toLowerCase() === filterStatus;
+    const matchesType =
+      filterType === "all" ||
+      booking.service.type.toLowerCase() === filterType;
     return matchesSearch && matchesStatus && matchesType;
   });
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -229,19 +216,25 @@ const MyBookings = () => {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">My Bookings</h1>
-          <p className="text-muted-foreground">View and manage all your reservations</p>
+          <p className="text-muted-foreground">
+            View and manage all your reservations
+          </p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-6 flex flex-col md:flex-row gap-4">
+<div>
+
+</div>
+{loading ? <MyBookingsSkeleton/> : (
+  <div>
+   <div className="mb-6 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by booking ID or service name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
-            />
+            /> */}
           </div>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-full md:w-[180px]">
@@ -272,25 +265,31 @@ const MyBookings = () => {
         {filteredBookings.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <p className="text-muted-foreground text-lg mb-2">No bookings found</p>
-              <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
+              <p className="text-muted-foreground text-lg mb-2">
+                No bookings found
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Try adjusting your filters
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-6">
             {filteredBookings.map((booking) => (
               <Card
-                key={booking.id}
+                key={booking._id}
                 className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
               >
                 <CardHeader className="pb-4">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      {getServiceIcon(booking.serviceType)}
+                      {getServiceIcon(booking.service.type)}
                       <div>
-                        <CardTitle className="text-xl">{booking.serviceName}</CardTitle>
+                        <CardTitle className="text-xl">
+                          {booking.service.title}
+                        </CardTitle>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Booking ID: {booking.id}
+                          Booking ID: {booking.bookingId}
                         </p>
                       </div>
                     </div>
@@ -311,37 +310,51 @@ const MyBookings = () => {
                       <div>
                         <p className="text-xs text-muted-foreground">Check-In</p>
                         <p className="text-sm font-medium">
-                          {new Date(booking.checkIn).toLocaleDateString()}
+                          {new Date(
+                            booking.checkInDate
+                          ).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Check-Out</p>
+                        <p className="text-xs text-muted-foreground">
+                          Check-Out
+                        </p>
                         <p className="text-sm font-medium">
-                          {new Date(booking.checkOut).toLocaleDateString()}
+                          {new Date(
+                            booking.checkOutDate
+                          ).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Total Price</p>
-                        <p className="text-sm font-medium">${booking.totalPrice}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Total Price
+                        </p>
+                        <p className="text-sm font-medium">
+                          ${booking.totalPrice}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Service Type</p>
-                        <p className="text-sm font-medium">{booking.serviceType}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Service Type
+                        </p>
+                        <p className="text-sm font-medium">
+                          {booking.service.type}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {canModifyBooking(booking.checkIn) &&
+                    {canModifyBooking(booking.checkInDate) &&
                       booking.bookingStatus !== "Cancelled" &&
                       booking.bookingStatus !== "Completed" && (
                         <>
@@ -362,7 +375,7 @@ const MyBookings = () => {
                           </Button>
                         </>
                       )}
-                    {!canModifyBooking(booking.checkIn) &&
+                    {!canModifyBooking(booking.checkInDate) &&
                       booking.bookingStatus !== "Cancelled" &&
                       booking.bookingStatus !== "Completed" && (
                         <p className="text-sm text-muted-foreground">
@@ -375,6 +388,10 @@ const MyBookings = () => {
             ))}
           </div>
         )}
+</div>
+)}
+        {/* Filters */}
+       
       </main>
 
       {selectedBooking && (
@@ -382,28 +399,36 @@ const MyBookings = () => {
           <EditBookingDialog
             open={editDialogOpen}
             onOpenChange={setEditDialogOpen}
-            bookingId={selectedBooking.id}
-            serviceName={selectedBooking.serviceName}
-            currentCheckIn={selectedBooking.checkIn}
-            currentCheckOut={selectedBooking.checkOut}
+            bookingId={selectedBooking._id}
+            serviceName={selectedBooking.service.title}
+            currentCheckIn={selectedBooking.checkInDate}
+            currentCheckOut={selectedBooking.checkOutDate}
             onSave={handleSaveEdit}
           />
 
-          <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+          <AlertDialog
+            open={cancelDialogOpen}
+            onOpenChange={setCancelDialogOpen}
+          >
             <AlertDialogContent>
               <AlertDialogHeader className="items-center text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
                   <AlertTriangle className="h-6 w-6 text-destructive" />
                 </div>
-                <AlertDialogTitle className="text-center">Cancel Booking</AlertDialogTitle>
+                <AlertDialogTitle className="text-center">
+                  Cancel Booking
+                </AlertDialogTitle>
                 <AlertDialogDescription className="text-center">
-                  Are you sure you want to cancel your booking for {selectedBooking.serviceName}? 
-                  This action cannot be undone.
+                  Are you sure you want to cancel your booking for{" "}
+                  {selectedBooking.service.title}? This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleCancel(selectedBooking.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction
+                  onClick={() => handleCancel(selectedBooking._id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
                   Cancel Booking
                 </AlertDialogAction>
               </AlertDialogFooter>

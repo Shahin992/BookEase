@@ -24,19 +24,41 @@ export interface CreateBookingRequest {
   _id: string
 }
 
+export interface CheckConflictPayload {
+  serviceId: string;
+  checkInDate: string;
+  checkOutDate: string;
+}
+
 export interface IBooking {
   _id: string;
-  service: string; 
-  user: string; 
+  bookingId: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  service: {
+    _id: string;
+    title: string;
+    price: number;
+    image: string;
+    type: string;
+    location: string;
+  };
   bookingDate: string;
   checkInDate: string;
   checkOutDate: string;
   totalDays: number;
   totalGuests: number;
   totalPrice: number;
-  paymentStatus: "Pending" | "Paid" | "Cancelled";
   bookingStatus: "Upcoming" | "Completed" | "Cancelled";
+  paymentStatus: "Pending" | "Paid" | "Cancelled";
+  createdAt: string;
+  updatedAt: string;
 }
+
+
 
 export interface ISignInResponse {
   success: boolean;

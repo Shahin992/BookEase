@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/Context/AuthContext";
 import { ArrowRight, Search, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Hero = () => {
-  const isLoggedIn = false; // TODO: Replace with actual auth state
+  const { isAuthenticated } = useAuth();
+  
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
@@ -30,14 +32,8 @@ const Hero = () => {
               </Button>
             </Link>
             
-            {isLoggedIn ? (
-              <Link to="/my-bookings">
-                <Button size="lg" variant="outline" className="text-lg px-8">
-                  <Calendar className="mr-2 h-5 w-5" />
-                  My Bookings
-                </Button>
-              </Link>
-            ) : (
+            
+             {!isAuthenticated && ( 
               <Link to="/signin">
                 <Button size="lg" variant="outline" className="text-lg px-8">
                   Get Started
@@ -45,6 +41,7 @@ const Hero = () => {
                 </Button>
               </Link>
             )}
+            
           </div>
         </div>
       </div>

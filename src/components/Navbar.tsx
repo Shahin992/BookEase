@@ -20,7 +20,7 @@ const Navbar = () => {
 
   const userLinks = [
     { to: "/", label: "Home" },
-    { to: "/services", label: "Book Now" },
+    { to: "/services", label: "Services" },
     { to: "/my-bookings", label: "My Bookings" },
     { to: "/about", label: "About" },
     { to: "/contact", label: "Contact" },
