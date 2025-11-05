@@ -8,6 +8,7 @@ import { apiRequest } from "@/api/apiClient";
 import { useState } from "react";
 import { signupSchema } from "@/Utils/userValidation";
 import { createUser } from "@/api/authApi";
+import { Eye, EyeOff } from "lucide-react";
 
 interface FormErrors {
   fullName?: string;
@@ -21,6 +22,7 @@ const SignUp = () => {
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,17 +115,25 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground/90">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="Create a password"
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"}
+                     placeholder="Create a password"
                   className="focus-visible:border-accent"
                   onChange={handleChange}
-                />
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
 
                 {errors.general && <p className="text-red-500 text-sm">{errors.general}</p>}
-
               </div>
               <Button  onClick={handleSubmit} className="w-full mt-6" size="lg" style={{ background: 'var(--gradient-accent)' }}>
                 {loading ? "Signing up..." : "Sign Up"}

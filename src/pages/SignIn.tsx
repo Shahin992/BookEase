@@ -8,6 +8,7 @@ import { signinUser } from "@/api/authApi";
 import { signinSchema } from "@/Utils/userValidation";
 import { useState } from "react";
 import { useAuth } from "@/Context/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
 interface FormErrors {
   email?: string;
@@ -22,6 +23,7 @@ const SignIn = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -104,15 +106,24 @@ const SignIn = () => {
                 />
                  {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
               </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground/90">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="Enter your password"
-                  className="focus-visible:border-primary"
-                  onChange={handleChange}
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="focus-visible:border-primary"
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
 
                 {errors.general && <p className="text-red-500 text-sm">{errors.general}</p>}
