@@ -47,6 +47,8 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
   const [cardError, setCardError] = useState("");
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const navigate = useNavigate();
+  const [checking, setChecking] = useState(false);
+  const [isPaying, setIspaying] = useState(false);
 
   // Stripe test card numbers
   const validTestCards = [
@@ -134,7 +136,7 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
 
   const handleBooking = async () => {
   if (!checkIn || !checkOut) return;
-
+    setIspaying(true);
   try {
     const payload: CreateBookingRequest = {
       serviceId: reservation?._id.toString(),
@@ -155,11 +157,15 @@ const BookingDialog = ({ open, onOpenChange, reservation }: BookingDialogProps) 
   } catch (error: any) {
     const msg = error.response?.data?.message || error.message || "Something went wrong";
     toast.error(msg);
+  } finally {
+    setIspaying(false);
   }
 };
 
 const checkAvailability = async () => {
   if (!checkIn || !checkOut) return;
+
+  setChecking(true);
 
   try {
     const response = await checkBookingConflictApi({
@@ -179,6 +185,8 @@ const checkAvailability = async () => {
     const msg = error.response?.data?.message || error.message || "Something went wrong";
     toast.error(msg);
     return false;
+  } finally {
+    setChecking(false);
   }
 };
 
@@ -313,9 +321,9 @@ const checkAvailability = async () => {
                 className="w-full" 
                 size="lg"
                 onClick={checkAvailability}
-                disabled={!checkIn || !checkOut}
+                disabled={!checkIn || !checkOut || checking}
               >
-                Continue to Payment
+                {checking ? "Checking Availability..." : "Continue to Payment"}
               </Button>
             </div>
           ) : (
@@ -483,10 +491,11 @@ const checkAvailability = async () => {
                       cvv.length !== 3 || 
                       !!cardError ||
                       !validateExpiry(expiry)
+                      || isPaying
                     }
                   >
                     <Check className="mr-2 h-5 w-5" />
-                    Confirm & Pay ${calculateTotal()}
+                    {isPaying ? 'Processing...' :  `{Confirm & Pay ${calculateTotal()}}`}
                   </Button>
                 </div>
               </div>
