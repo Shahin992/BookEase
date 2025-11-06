@@ -173,7 +173,8 @@ const [reservation, setReservation] = useState<Reservation | null>(null);
                 className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg text-lg py-6"
                 onClick={() => {
                   if (!isAuthenticated){
-                    navigate('/signin')
+                    // navigate('/signin')
+                    navigate('/signin', { state: { from: location.pathname } });
                   }
                   setBookingDialogOpen(true)}
                 }
